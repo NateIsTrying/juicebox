@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const { getUserById } = require('../db');
 const { JWT_SECRET } = process.env;
 
+const { requireUser } = require('./utils');
+
 // set `req.user` if possible
 apiRouter.use(async (req, res, next) => {
   const prefix = 'Bearer ';
@@ -48,6 +50,12 @@ apiRouter.use((req, res, next) => {
   next();
 });
 
+apiRouter.use(requireUser);
+
+apiRouter.get('/test', requireUser, (req, res) => {
+  res.json({ message: 'You are logged in!', user: req.user });
+});
+
 const usersRouter = require('./users');
 apiRouter.use('/users', usersRouter);
 
@@ -58,7 +66,7 @@ const tagsRouter = require('./tags');
 apiRouter.use('/tags', tagsRouter);
 
 apiRouter.use((error, req, res, next) => {
-  res.send(error);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 module.exports = apiRouter;

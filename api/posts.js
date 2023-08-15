@@ -38,7 +38,7 @@ postsRouter.get('/', async (req, res, next) => {
 });
 
 postsRouter.post('/', requireUser, async (req, res, next) => {
-  const { title, content = "" } = req.body;
+  const { title, content = "", tags } = req.body;
 
   const postData = {};
 
@@ -49,7 +49,14 @@ postsRouter.post('/', requireUser, async (req, res, next) => {
 
     const post = await createPost(postData);
 
-    if (post) {
+
+    if (tags && Array.isArray(tags)) {
+      postData.tags =tags;
+    } else if(tags) {
+      postData.tags = tags.trim().split(/\s*,\s*/);
+    } 
+    
+    if(post) {
       res.send(post);
     } else {
       next({
@@ -98,7 +105,24 @@ postsRouter.patch('/:postId', requireUser, async (req, res, next) => {
 });
 
 postsRouter.delete('/:postId', requireUser, async (req, res, next) => {
-  res.send({ message: 'under construction' });
+  const { postId } = req.params;
+
+  try {
+    const postToDelete = await getPostById(postId);
+
+    if(!postToDelete) {
+      next({
+        name: 'PostNotFoundError',
+        message: 'You cannot delete a post that is not yours'
+      });
+      return;
+    }
+    await deletePost(postId);
+
+    res.send({ message: 'Post deleted successfully'});
+  } catch({ name, message }) {
+      next({ name, message });
+  }
 });
 
 module.exports = postsRouter;
